@@ -13,7 +13,8 @@ CORS(app, resources={r"/api/*": {"origins": "chrome-extension://giagjcgibhbgppol
 
 tessdata_dir_config = '--tessdata-dir "C:\\Program Files\\Tesseract-OCR\\tessdata"'
 os.environ['TESSDATA_PREFIX'] = "C:\\Program Files\\Tesseract-OCR\\tessdata"
-#os.environ['TESSDATA_PREFIX'] = "C:\\Program Files\\Tesseract-OCR\\tessdata"
+#os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr/4.00/tessdata/'
+
 
 config = '--psm 4 --oem 3 -c textord_old_xheight=true textord_fix_xheight_bug=false preserve_interword_spaces=1 '
 # Chemin vers l'exécutable Tesseract (modifier en fonction de votre configuration)
