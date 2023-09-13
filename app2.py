@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify 
+from flask import Flask, request, jsonify
 import pytesseract
 import re
 import cv2
@@ -13,68 +13,13 @@ CORS(app, resources={r"/api/*": {"origins": "chrome-extension://giagjcgibhbgppol
 
 
 tessdata_dir_config = '--tessdata-dir "C:\\Program Files\\Tesseract-OCR\\tessdata"'
-os.environ['TESSDATA_PREFIX'] = "C:\\Program Files\\Tesseract-OCR\\tessdata"
-#os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr/4.00/tessdata/'
+#os.environ['TESSDATA_PREFIX'] = "C:\\Program Files\\Tesseract-OCR\\tessdata"
+os.environ['TESSDATA_PREFIX'] = '/usr/share/tesseract-ocr/4.00/tessdata/'
 
 
 config = '--psm 4 --oem 3 -c textord_old_xheight=true textord_fix_xheight_bug=false preserve_interword_spaces=1 '
 # Chemin vers l'exécutable Tesseract (modifier en fonction de votre configuration)
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  
-
-@app.route('/api/cin', methods=['POST'])
-def process_image():
-    try:
-        # Get the uploaded image file
-        image_file = request.files['image']
-        
-        # Convert the image file to OpenCV image format
-        nparr = np.frombuffer(image_file.read(), np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        # Convert the image to grayscale
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # Apply OCR using Tesseract
-        text = pytesseract.image_to_string(gray_image, lang='fra', config=config)
-        text = re.sub(r'[\u0600-\u06FF]', '', text)
-
-       
-        info_patterns = {
-            'nom': r'[Nn]?[Oo][Mm]\s(.+?\s.+?\s.+?)\s',
-            'date_naissance': r'[Nn][Éée]\s*[Ll]\s*[Ee]?\s+(\d{2})\.(\d{2})\.(\d{4})',
-            'lieu_naissance': r'[Àà][Aa]?\s+(.*?)\s+',
-            'nom_pere': r'\bde\b\s([A-Z][A-Z\s]+?[A-Z]\s[A-Z][A-Z\s]+?)\s',
-            'nom_mere': r'[Ee][Tt]\s?[Dd][Ee]?\s?[a-z]?\s?(.+?\s.+?)\s',
-            'profession': r'[Pp][Rr][Oo][A-Za-z]{7}\s+(.*?)\s+',
-            'adresse': r'[Dd][Oo][Mm][Ii][Cc][Ii][A-Za-z]{2}\s+(.*?)\s+',
-            'ncin': r'(\d{6})'
-        }
-
-        extracted_info = {}
-        for key, pattern in info_patterns.items():
-            match = re.search(pattern, text)
-            if key == 'date_naissance':
-                if match:
-                    day, month, year = match.group(1).strip(), match.group(2).strip(), match.group(3).strip()
-                    extracted_info[key] = f'{day}/{month}/{year}'
-                else:
-                    extracted_info[key] = ''
-            else:
-                if match:
-                    extracted_info[key] = match.group(1).strip()
-                else:
-                    extracted_info[key] = ''
-
-        # Convertir le dictionnaire en format JSON
-        json_output = json.dumps(extracted_info, ensure_ascii=False, indent=4)
- 
-
-        # Return the JSON response
-        return json_output, 200
-    except Exception as e:
-        error_response = {'error': str(e)}
-        return jsonify(error_response), 400
-
+#pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 @app.route('/api/oldcni', methods=['POST'])
 def process_oldcni():
@@ -405,4 +350,3 @@ if __name__ == '__main__':
 
 
     app.run(debug=True,)
-
