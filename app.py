@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify 
+import cx_Oracle
 import pytesseract
 import re
 import cv2
@@ -397,6 +398,55 @@ def process_newcni():
 @app.route('/coucou', methods=['GET'])
 def say_hello():
     return "Salut tout le monde"
+
+
+# Oracle database connection details
+oracle_host = "10.11.22.12"
+oracle_port = 1521
+oracle_service = "BSCSPROD.DJIBOUTITELECOM.DJ"
+oracle_user = "SYSADM"
+oracle_password = "SYSADM"
+# Informations de connexion à la base de données Oracle
+dsn_tns = cx_Oracle.makedsn(oracle_host, oracle_port, service_name=oracle_service) 
+
+@app.route('/api/insert', methods=['POST'])
+def insert_data():
+    try:
+
+        # Récupérer les données du formulaire
+        dir_num = request.form['dir_num']
+        sms_text = request.form['sms_text']
+
+        # Connexion à la base de données
+        connection = cx_Oracle.connect(user=oracle_user, password=oracle_password, dsn=dsn_tns)
+        cursor = connection.cursor()
+
+        # Requête d'insertion avec une sous-requête pour obtenir la nouvelle valeur de FP_SMS_REQUEST_ID
+        insert_query = """
+            INSERT INTO SYSADM.FP_SMS_INTERFACE 
+            (FP_SMS_REQUEST_ID, PRIORITY, DIR_NUM, NPCODE, NP_SHDES, SMS_TEXT, ENTRY_DATE, STATUS) 
+            VALUES 
+            ((SELECT NVL(MAX(FP_SMS_REQUEST_ID), 0) + 1 FROM FP_SMS_INTERFACE), 1, :dir_num, 1, 'E.164', :sms_text, SYSDATE, NULL)
+        """
+
+        # Exécution de la requête d'insertion
+        cursor.execute(insert_query, {'dir_num': dir_num, 'sms_text': sms_text})
+
+        # Validation de la transaction
+        connection.commit()
+
+        # Fermeture du curseur et de la connexion
+        cursor.close()
+        connection.close()
+
+        return jsonify({'message': 'Insertion réussie.'}), 200
+
+    except Exception as e:
+        # En cas d'erreur, annulation de la transaction
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
 
